@@ -54,18 +54,28 @@ class MCTS_Node():
         self._untried_actions.reverse() #reversal is used as last moves are used first to expand
         return self._untried_actions
 
+    
+    
+    def nn_rating(self):
+        tensor = torch.zeros(1,12,8,8)
+        tensor[0] = gameToTensor(self.game_state.get_game_data(), 1)
+        NNrating = self.NNmodel(tensor).item()
+        return NNrating
+    
     """
     def q(self) defines the value system for the AI. it currently values a win and draw the same.
     This can definitely be improved, but be careful because anything not directly associated with wining the game may distract the AI
     """
+    
     def q(self):
         wins = self._results[1]
         draws = self._results[0]
         loses = self._results[-1]
         tensor = torch.zeros(1,12,8,8)
-        tensor[0] = gameToTensor(self.game_state.get_game_data(), self.game_state.get_game_data().ply)
+        tensor[0] = gameToTensor(self.game_state.get_game_data(), 1)
         NNrating = self.NNmodel(tensor).item()
-        return wins + draws - loses + (0.5 * NNrating)
+        return wins + draws - loses + 0.3 * NNrating #0.3 is the weight of the neural network rating
+        
 
     def n(self):
         return self._number_of_visits        #Returns the number of times each node is visited.
@@ -110,9 +120,9 @@ class MCTS_Node():
     def is_fully_expanded(self):
         return len(self._untried_actions) == 0
 
-    def best_child(self, c_param=0.5):
+    def best_child(self, c_param=0.2):
         #classic MCTS equation, c_param could probably be tweaked a bit
-        choices_weights = [(c.q() / c.n()) + c_param * np.sqrt((2 * np.log(self.n()) / c.n())) for c in self.children] 
+        choices_weights = [c.nn_rating() + (c.q() / c.n()) + c_param * np.sqrt((2 * np.log(self.n()) / c.n())) for c in self.children] 
         return self.children[np.argmax(choices_weights)]
 
     def getConcreteNodeValue(self):
