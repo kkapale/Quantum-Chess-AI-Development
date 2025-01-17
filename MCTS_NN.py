@@ -58,7 +58,7 @@ class MCTS_Node():
     
     def nn_rating(self):
         tensor = torch.zeros(1,12,8,8)
-        tensor[0] = gameToTensor(self.game_state.get_game_data(), 1)
+        tensor[0] = gameToTensor(self.game_state.get_game_data(), self.game_state.get_game_data().ply)
         NNrating = self.NNmodel(tensor).item()
         return NNrating
     
@@ -71,10 +71,8 @@ class MCTS_Node():
         wins = self._results[1]
         draws = self._results[0]
         loses = self._results[-1]
-        tensor = torch.zeros(1,12,8,8)
-        tensor[0] = gameToTensor(self.game_state.get_game_data(), 1)
-        NNrating = self.NNmodel(tensor).item()
-        return wins + draws - loses + 0.3 * NNrating #0.3 is the weight of the neural network rating
+        
+        return wins + draws - loses
         
 
     def n(self):
@@ -122,8 +120,14 @@ class MCTS_Node():
 
     def best_child(self, c_param=0.2):
         #classic MCTS equation, c_param could probably be tweaked a bit
-        choices_weights = [c.nn_rating() + (c.q() / c.n()) + c_param * np.sqrt((2 * np.log(self.n()) / c.n())) for c in self.children] 
+        choices_weights = [(0.2 * c.nn_rating()) + (c.q() / c.n()) + c_param * np.sqrt((2 * np.log(self.n()) / c.n())) for c in self.children] 
         return self.children[np.argmax(choices_weights)]
+
+    def most_visited_child(self):
+        return self.children[np.argmax([c.n() for c in self.children])]
+    
+    def highest_q_child(self):
+        return self.children[np.argmax([c.q() for c in self.children])]
 
     def getConcreteNodeValue(self):
         #print(self.q()/self.n())
@@ -134,11 +138,13 @@ class MCTS_Node():
 
     def _tree_policy(self):
         current_node = self
+        
         while not current_node.is_terminal_node():
             if not current_node.is_fully_expanded():
                 return current_node.expand()
             else:
                 current_node = current_node.best_child()
+        #print(f"Terminal node reached: {current_node.parent_action}")
         return current_node
 
     def tic1(self): #these functions are used to make a timeout for the ai so it doesen't go too long, 
@@ -153,19 +159,20 @@ class MCTS_Node():
     
     def best_action(self, player, model, simVar = 3, timeout = 100):
         
-        #print(f"{simVar} in file")
+        print(f"{player} player # in model")
         l=len(self._untried_actions)
         simulation_no = simVar*l #adaptive simulations
         
         for i in range(simulation_no):
             v = self._tree_policy()
+            
+            #print(f"node reached: {v.parent_action}, terminal: {v.is_terminal_node()}") #debug
             if i == 0:
                 v.tic1()
-                
             reward = v.rollout(player)
-            v.backpropagate(reward)
             
+            v.backpropagate(reward)
             if v.toc1() > timeout:
                 print('hit time limit')
                 break
-        return self.best_child().parent_action
+        return self.best_child().parent_action, self.most_visited_child().parent_action, self.highest_q_child().parent_action
