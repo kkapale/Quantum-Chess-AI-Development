@@ -90,31 +90,48 @@ def square_number_to_str(square_number) -> str:
     row = int(square_number / 8)
     return chr(column+97) + str(row+1)
 
+def chess_notation_to_indices(move: str):
+    
+    def square_to_index(square: str) -> int:
+        file = ord(square[0]) - ord('a')  # Convert 'a'-'h' to 0-7
+        rank = int(square[1]) - 1         # Convert '1'-'8' to 0-7
+        return rank * 8 + file            # Convert (rank, file) to 0-63 index
+
+    source = square_to_index(move[:2])
+    destination = square_to_index(move[2:])
+
+    return source, destination
+
+# Example usage:
+move = "e2e4"
+indices = chess_notation_to_indices(move)
+print(indices)  # Output: (12, 28)
+
+
+def format_move(move) -> str:
+    if( move["type"] == 4 or move["type"] == 5 ):
+        movestr = square_number_to_str(move["square1"]) + "^" \
+                + square_number_to_str(move["square2"]) \
+                + square_number_to_str(move["square3"])
+    # Merge move
+    elif( move["type"] == 6 or move["type"] == 7 ):
+        movestr = square_number_to_str(move["square1"]) \
+                + square_number_to_str(move["square2"]) + "^" \
+                + square_number_to_str(move["square3"])
+    # Standard
+    else:
+        movestr = square_number_to_str(move["square1"]) + square_number_to_str(move["square2"])
+
+    # Was this a promotion move?
+    if( move["promotion_piece"] != 0 ):
+        movestr += str(number_to_piece[move["promotion_piece"]])
+
+    return movestr
+
 def format_moves(moves) -> str:
     allmoves = []
     for move in moves:
-        # Split move
-        if( move["type"] == 4 or move["type"] == 5 ):
-            movestr = square_number_to_str(move["square1"]) + "^" \
-                    + square_number_to_str(move["square2"]) \
-                    + square_number_to_str(move["square3"])
-        # Merge move
-        elif( move["type"] == 6 or move["type"] == 7 ):
-            movestr = square_number_to_str(move["square1"]) \
-                    + square_number_to_str(move["square2"]) + "^" \
-                    + square_number_to_str(move["square3"])
-        # Standard
-        else:
-            movestr = square_number_to_str(move["square1"]) + square_number_to_str(move["square2"])
-
-        # Was this a promotion move?
-        if( move["promotion_piece"] != 0 ):
-            movestr += str(number_to_piece[move["promotion_piece"]])
-
-        # Was this a measurement?
-        if( move["does_measurement"] ):
-            movestr += ".m" + str(move["measurement_outcome"])
-
+        movestr = format_move(move)
         allmoves.append(movestr)
 
     return allmoves

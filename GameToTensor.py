@@ -1,6 +1,5 @@
-
-import numpy as np
 import torch
+
 
 def gameToTensor(game_state, AI_Player):
     whiteArr = ['K', 'Q', 'R', 'B', 'N', 'P']

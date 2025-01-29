@@ -206,6 +206,13 @@ class QuantumChessGame:
 
         self.current_player = self.gamedata.ply % 2
         return self.gamedata, self.movecode.value
+    
+    def get_last_move(self):
+        move_history = self.get_history()
+        last_move = None
+        if len(move_history) >= 1:
+            last_move = move_history[-1]
+        return last_move
 
     def undo_move(self):
         move_history = self.get_history()
