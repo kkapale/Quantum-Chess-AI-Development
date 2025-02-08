@@ -1,6 +1,5 @@
 #following are needed for MCTS
 import numpy as np
-import copy
 import time
 from collections import defaultdict
 import torch
@@ -12,6 +11,7 @@ import QChessNN as NN
 
 def node_value(game_state, AI_player):
     move_code = game_state.movecode.value
+    AI_player = 2 % (AI_player + 2)
     """To be used only on terminal node.
         Returns 1 if player wins. -1 if opponent wins and 0 is a draw"""
     if game_state.is_game_over():
@@ -59,8 +59,10 @@ class MCTS_Node():
     def nn_rating(self):
         tensor = torch.zeros(1,12,8,8)
         tensor[0] = gameToTensor(self.game_state.get_game_data(), self.game_state.get_game_data().ply)
+        
         NNrating = self.NNmodel(tensor).item()
-        return NNrating
+
+        return NNrating, 
     
     """
     def q(self) defines the value system for the AI. it currently values a win and draw the same.
@@ -120,7 +122,7 @@ class MCTS_Node():
 
     def best_child(self, c_param=0.2):
         #classic MCTS equation, c_param could probably be tweaked a bit
-        choices_weights = [(0.2 * c.nn_rating()) + (c.q() / c.n()) + c_param * np.sqrt((2 * np.log(self.n()) / c.n())) for c in self.children] 
+        choices_weights = [(np.multiply(c.nn_rating(), 0.2)) + (c.q() / c.n()) + c_param * np.sqrt((2 * np.log(self.n()) / c.n())) for c in self.children] 
         return self.children[np.argmax(choices_weights)]
 
     def most_visited_child(self):

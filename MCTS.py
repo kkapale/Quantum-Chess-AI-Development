@@ -9,6 +9,7 @@ from collections import defaultdict
 
 def node_value(game_state, AI_player):
     move_code = game_state.movecode.value
+    AI_player = 2 % AI_player
     """To be used only on terminal node.
         Returns 1 if player wins. -1 if opponent wins and 0 is a draw"""
     if game_state.is_game_over():
