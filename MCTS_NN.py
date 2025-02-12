@@ -11,7 +11,7 @@ import QChessNN as NN
 
 def node_value(game_state, AI_player):
     move_code = game_state.movecode.value
-    AI_player = 2 % (AI_player + 2)
+    AI_player = AI_player % 2
     """To be used only on terminal node.
         Returns 1 if player wins. -1 if opponent wins and 0 is a draw"""
     if game_state.is_game_over():
@@ -60,7 +60,7 @@ class MCTS_Node():
         tensor = torch.zeros(1,12,8,8)
         tensor[0] = gameToTensor(self.game_state.get_game_data(), self.game_state.get_game_data().ply)
         
-        NNrating = self.NNmodel(tensor).item()
+        NNrating = self.NNmodel(tensor)[0].item()
 
         return NNrating, 
     
@@ -76,9 +76,11 @@ class MCTS_Node():
         
         return wins + draws - loses
         
-
     def n(self):
         return self._number_of_visits        #Returns the number of times each node is visited.
+    
+    def value(self):
+        return self.q() / self.n() if self.n() != 0 else 0
 
     def expand(self):
         action = self._untried_actions.pop()
@@ -177,4 +179,4 @@ class MCTS_Node():
             if v.toc1() > timeout:
                 print('hit time limit')
                 break
-        return self.best_child().parent_action, self.most_visited_child().parent_action, self.highest_q_child().parent_action
+        return self.best_child().parent_action, self.best_child().value()

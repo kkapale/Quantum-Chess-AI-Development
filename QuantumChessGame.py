@@ -206,13 +206,6 @@ class QuantumChessGame:
 
         self.current_player = self.gamedata.ply % 2
         return self.gamedata, self.movecode.value
-    
-    def get_last_move(self):
-        move_history = self.get_history()
-        last_move = None
-        if len(move_history) >= 1:
-            last_move = move_history[-1]
-        return last_move
 
     def undo_move(self):
         move_history = self.get_history()
@@ -256,6 +249,20 @@ class QuantumChessGame:
     def get_game_data(self):
         self.QChess_lib.get_game_data(self.game_pointer, byref(self.gamedata))
         return self.gamedata
+
+    def get_unformatted_last_move(self, max_history_size = 512):
+        moves = (Move*max_history_size)()
+        out_size = c_size_t()
+        self.QChess_lib.get_history(self.game_pointer, moves, sizeof(Move)*max_history_size, byref(out_size) )
+
+        allMoves = []
+        for move in moves[:out_size.value]:
+            thisMove = {}
+            for field in move._fields_:
+                thisMove[field[0]] = getattr(move, field[0])
+
+            allMoves.append(thisMove)
+        return allMoves[-1]
 
     def get_history(self, max_history_size = 512):
         moves = (Move*max_history_size)()
