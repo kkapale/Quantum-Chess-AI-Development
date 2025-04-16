@@ -1,5 +1,6 @@
 #following are needed for MCTS
 import numpy as np
+#from numba import jit
 import time
 from collections import defaultdict
 import torch
@@ -75,7 +76,7 @@ class MCTS_Node():
         loses = self._results[-1]
         
         return wins + draws - loses
-        
+    
     def n(self):
         return self._number_of_visits        #Returns the number of times each node is visited.
     
@@ -109,6 +110,7 @@ class MCTS_Node():
         """
         while not current_rollout_state.is_game_over():
             current_rollout_state.random_rollout() #This creates only one QC game and does rollout: very FAST
+            
             #backpropagate(player)
         
         return node_value(current_rollout_state, player)
@@ -122,9 +124,9 @@ class MCTS_Node():
     def is_fully_expanded(self):
         return len(self._untried_actions) == 0
 
-    def best_child(self, c_param=0.2):
+    def best_child(self, c_param=0.4):
         #classic MCTS equation, c_param could probably be tweaked a bit
-        choices_weights = [(np.multiply(c.nn_rating(), 0.2)) + (c.q() / c.n()) + c_param * np.sqrt((2 * np.log(self.n()) / c.n())) for c in self.children] 
+        choices_weights = [(np.multiply(c.nn_rating(), 0.4)) + (c.q() / c.n()) + c_param * np.sqrt((2 * np.log(self.n()) / c.n())) for c in self.children] 
         return self.children[np.argmax(choices_weights)]
 
     def most_visited_child(self):
@@ -170,9 +172,9 @@ class MCTS_Node():
         for i in range(simulation_no):
             v = self._tree_policy()
             
-            #print(f"node reached: {v.parent_action}, terminal: {v.is_terminal_node()}") #debug
             if i == 0:
                 v.tic1()
+            
             reward = v.rollout(player)
             
             v.backpropagate(reward)
